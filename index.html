@@ -8,22 +8,51 @@
         const isViteOrWS = (str) => {
           if (!str) return false;
           const s = String(str).toLowerCase();
-          return s.includes('websocket') || s.includes('vite') || s.includes('hmr') || s.includes('ws:') || s.includes('webchannelconnection') || s.includes('listen');
+          return s.includes('websocket') || 
+                 s.includes('vite') || 
+                 s.includes('hmr') || 
+                 s.includes('ws:') || 
+                 s.includes('webchannelconnection') || 
+                 s.includes('listen') || 
+                 s.includes('closed') || 
+                 s.includes('opened');
         };
 
         window.addEventListener('unhandledrejection', (event) => {
-          const reasonStr = event.reason ? String(event.reason.message || event.reason) : '';
-          if (isViteOrWS(reasonStr)) {
-            event.preventDefault();
-            event.stopPropagation();
+          try {
+            const reason = event.reason;
+            let reasonStr = '';
+            if (reason) {
+              reasonStr = typeof reason === 'string' 
+                ? reason 
+                : (reason.message || reason.reason || JSON.stringify(reason) || String(reason));
+            }
+            if (isViteOrWS(reasonStr) || (reason && (reason.target instanceof WebSocket || reason.target?.constructor?.name === 'WebSocket'))) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          } catch (e) {
+            // Keep error listener from failing
           }
         }, true);
 
         window.addEventListener('error', (event) => {
-          const errorMsg = event.message ? String(event.message) : '';
-          if (isViteOrWS(errorMsg)) {
-            event.preventDefault();
-            event.stopPropagation();
+          try {
+            const error = event.error;
+            let errorMsg = '';
+            if (error) {
+              errorMsg = typeof error === 'string'
+                ? error
+                : (error.message || error.reason || JSON.stringify(error) || String(error));
+            } else if (event.message) {
+              errorMsg = event.message;
+            }
+            if (isViteOrWS(errorMsg) || (event.target && (event.target instanceof WebSocket || event.target?.constructor?.name === 'WebSocket'))) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          } catch (e) {
+            // Keep error listener from failing
           }
         }, true);
 

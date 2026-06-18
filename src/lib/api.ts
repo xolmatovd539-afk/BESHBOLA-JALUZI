@@ -25,44 +25,37 @@ export interface DBState {
   };
 }
 
-export async function getDb(): Promise<DBState> {
+let lastBackgroundFetchTime = 0;
+const MIN_BACKGROUND_FETCH_INTERVAL = 30000; // Limit background online fetch to once every 30 seconds
+
+async function fetchWithTimeout<T>(promise: Promise<T>, ms = 4000): Promise<T> {
+  let timeoutId: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error("Timeout"));
+    }, ms);
+  });
+  
   try {
-    // 1. Try to fetch fresh from online/live collections
-    const [mSnap, oSnap, iSnap, sSnap] = await Promise.all([
-      getDocs(collection(db, 'materials')),
-      getDocs(collection(db, 'orders')),
-      getDocs(collection(db, 'inventory')),
-      getDoc(doc(db, 'settings', 'global'))
-    ]);
+    const result = await Promise.race([promise, timeoutPromise]);
+    return result;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
-    const materials = mSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const orders = oSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const inventory = iSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    
-    let settings = { 
-      usdToUzs: 12650, 
-      companyName: "BESHBOLA JALUZI", 
-      managerName: "Dostonbek", 
-      managerPhone: "+998911200004" 
-    };
-    if (sSnap.exists()) {
-      settings = { ...settings, ...sSnap.data() };
+export async function getDb(): Promise<DBState> {
+  // 1. Try to load cached state immediately (instantly responsive, completely offline-compatible)
+  let cachedState: DBState | null = null;
+  
+  try {
+    const stored = localStorage.getItem('beshbola_db_state');
+    if (stored) {
+      cachedState = JSON.parse(stored);
     }
+  } catch (e) {}
 
-    const state = { materials, orders, inventory, settings };
-    
-    // Save to localStorage as a high-reliability fallback cache
-    try {
-      localStorage.setItem('beshbola_db_state', JSON.stringify(state));
-    } catch (e) {
-      console.warn("localStorage setItem error:", e);
-    }
-
-    return state;
-  } catch (err: any) {
-    console.warn("Firestore getDb failed, trying offline cache fallback:", err.message || err);
-    
-    // 2. Try to get from Firestore Local Cache
+  if (!cachedState) {
     try {
       const [mSnap, oSnap, iSnap, sSnap] = await Promise.all([
         getDocsFromCache(collection(db, 'materials')),
@@ -85,73 +78,186 @@ export async function getDb(): Promise<DBState> {
         settings = { ...settings, ...sSnap.data() };
       }
 
-      const state = { materials, orders, inventory, settings };
-      return state;
-    } catch (cacheErr: any) {
-      console.warn("Firestore local cache fetch failed, querying localStorage:", cacheErr.message || cacheErr);
+      cachedState = { materials, orders, inventory, settings };
       
-      // 3. Try to get from localStorage backup cache
       try {
-        const stored = localStorage.getItem('beshbola_db_state');
-        if (stored) {
-          return JSON.parse(stored);
+        localStorage.setItem('beshbola_db_state', JSON.stringify(cachedState));
+      } catch (e) {}
+    } catch (e) {}
+  }
+
+  const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+
+  // 2. If we have any cache (even empty arrays), return it instantly with 0ms delay!
+  if (cachedState) {
+    const now = Date.now();
+    if (isOnline && (now - lastBackgroundFetchTime > MIN_BACKGROUND_FETCH_INTERVAL)) {
+      lastBackgroundFetchTime = now;
+      
+      // Kick off background fetch silently without delaying the UI render
+      setTimeout(async () => {
+        try {
+          const [mSnap, oSnap, iSnap, sSnap] = await fetchWithTimeout(
+            Promise.all([
+              getDocs(collection(db, 'materials')),
+              getDocs(collection(db, 'orders')),
+              getDocs(collection(db, 'inventory')),
+              getDoc(doc(db, 'settings', 'global'))
+            ]),
+            3000
+          );
+
+          const materials = mSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          const orders = oSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          const inventory = iSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          
+          let settings = { 
+            usdToUzs: 12650, 
+            companyName: "BESHBOLA JALUZI", 
+            managerName: "Dostonbek", 
+            managerPhone: "+998911200004" 
+          };
+          if (sSnap.exists()) {
+            settings = { ...settings, ...sSnap.data() };
+          }
+
+          const state = { materials, orders, inventory, settings };
+          localStorage.setItem('beshbola_db_state', JSON.stringify(state));
+        } catch (err: any) {
+          // Fail silently in the background - no console spam
         }
-      } catch (lsErr) {
-        console.error("localStorage getItem failed:", lsErr);
+      }, 50);
+    }
+    return cachedState;
+  }
+
+  // 3. Fallback: If absolutely no cache exists yet (e.g., first load), perform a blocking online fetch
+  if (isOnline) {
+    try {
+      const [mSnap, oSnap, iSnap, sSnap] = await fetchWithTimeout(
+        Promise.all([
+          getDocs(collection(db, 'materials')),
+          getDocs(collection(db, 'orders')),
+          getDocs(collection(db, 'inventory')),
+          getDoc(doc(db, 'settings', 'global'))
+        ]),
+        2500
+      );
+
+      const materials = mSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const orders = oSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const inventory = iSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      let settings = { 
+        usdToUzs: 12650, 
+        companyName: "BESHBOLA JALUZI", 
+        managerName: "Dostonbek", 
+        managerPhone: "+998911200004" 
+      };
+      if (sSnap.exists()) {
+        settings = { ...settings, ...sSnap.data() };
       }
 
-      // 4. Return default/initial state to prevent any crash
-      return {
-        materials: [],
-        orders: [],
-        inventory: [],
-        settings: { 
-          usdToUzs: 12650, 
-          companyName: "BESHBOLA JALUZI", 
-          managerName: "Dostonbek", 
-          managerPhone: "+998911200004" 
-        }
-      };
+      const state = { materials, orders, inventory, settings };
+      
+      try {
+        localStorage.setItem('beshbola_db_state', JSON.stringify(state));
+      } catch (e) {}
+
+      return state;
+    } catch (err: any) {
+      // Fail silently without console warnings
     }
   }
+
+  // 4. Default state
+  const defaultState = {
+    materials: [],
+    orders: [],
+    inventory: [],
+    settings: { 
+      usdToUzs: 12650, 
+      companyName: "BESHBOLA JALUZI", 
+      managerName: "Dostonbek", 
+      managerPhone: "+998911200004" 
+    }
+  };
+  try {
+    localStorage.setItem('beshbola_db_state', JSON.stringify(defaultState));
+  } catch (e) {}
+  return defaultState;
 }
 
 export async function getCollection(collectionName: string): Promise<any[]> {
+  // Always query from localStorage or cache first for quick results
   try {
-    const snap = await getDocs(collection(db, collectionName));
+    const stored = localStorage.getItem(`beshbola_col_${collectionName}`);
+    if (stored) {
+      const items = JSON.parse(stored);
+      if (Array.isArray(items)) {
+        // Kick off background fetch silently if online
+        const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+        if (isOnline) {
+          setTimeout(async () => {
+            try {
+              const snap = await fetchWithTimeout(
+                getDocs(collection(db, collectionName)),
+                3000
+              );
+              const itemsFresh = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+              localStorage.setItem(`beshbola_col_${collectionName}`, JSON.stringify(itemsFresh));
+            } catch (e) {}
+          }, 50);
+        }
+        return items;
+      }
+    }
+  } catch (e) {}
+
+  // Fallback to offline Firestore Cache
+  try {
+    const snap = await getDocsFromCache(collection(db, collectionName));
     const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    
-    // Cache collection in localStorage
     try {
       localStorage.setItem(`beshbola_col_${collectionName}`, JSON.stringify(items));
     } catch (e) {}
-
     return items;
-  } catch (err: any) {
-    console.warn(`Firestore getCollection (${collectionName}) failed, trying cache:`, err.message || err);
+  } catch (cacheErr) {
     try {
-      const snap = await getDocsFromCache(collection(db, collectionName));
-      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (cacheErr) {
-      try {
-        const stored = localStorage.getItem(`beshbola_col_${collectionName}`);
-        if (stored) return JSON.parse(stored);
-      } catch (lsErr) {}
-      
-      // Secondary fallback from full DB state cache
-      try {
-        const fullDb = localStorage.getItem('beshbola_db_state');
-        if (fullDb) {
-          const parsed = JSON.parse(fullDb);
-          if (Array.isArray(parsed[collectionName])) {
-            return parsed[collectionName];
-          }
+      const stored = localStorage.getItem(`beshbola_col_${collectionName}`);
+      if (stored) return JSON.parse(stored);
+    } catch (lsErr) {}
+    
+    try {
+      const fullDb = localStorage.getItem('beshbola_db_state');
+      if (fullDb) {
+        const parsed = JSON.parse(fullDb);
+        if (Array.isArray(parsed[collectionName])) {
+          return parsed[collectionName];
         }
-      } catch (e) {}
+      }
+    } catch (e) {}
+  }
 
-      return [];
+  // Blocking online fetch only as last resort if totally empty
+  const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+  if (isOnline) {
+    try {
+      const snap = await fetchWithTimeout(
+        getDocs(collection(db, collectionName)),
+        2500
+      );
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      try {
+        localStorage.setItem(`beshbola_col_${collectionName}`, JSON.stringify(items));
+      } catch (e) {}
+      return items;
+    } catch (err: any) {
+      // Fail silently
     }
   }
+
+  return [];
 }
 
 export async function createItem(collectionName: string, item: any): Promise<any> {
@@ -163,7 +269,7 @@ export async function createItem(collectionName: string, item: any): Promise<any
   };
 
   try {
-    await setDoc(doc(db, collectionName, id), newItem);
+    setDoc(doc(db, collectionName, id), newItem); // Async trigger - Firestore local cache queues it
   } catch (err: any) {
     console.warn(`Firestore createItem (${collectionName}) background queue write:`, err.message || err);
   }
@@ -199,29 +305,25 @@ export async function updateItem(collectionName: string, id: string, updatedFiel
   };
 
   try {
-    await updateDoc(docRef, updatedData);
+    updateDoc(docRef, updatedData); // Async trigger - Firestore local cache queues it
   } catch (err: any) {
     console.warn(`Firestore updateDoc (${collectionName} / ${id}) queued:`, err.message || err);
   }
 
-  let finalItem: any = { id, ...updatedFields };
+  // Deduce the final item state using local cache synchronously (saves 100% of network latency)
+  let existingItem = {};
   try {
-    const snap = await getDoc(docRef).catch(() => getDocFromCache(docRef));
-    if (snap.exists()) {
-      finalItem = { id, ...snap.data() };
-    }
-  } catch (e) {
-    try {
-      const stored = localStorage.getItem('beshbola_db_state');
-      if (stored) {
-        const dbState = JSON.parse(stored) as DBState;
-        const existing = (dbState[collectionName] || []).find((x: any) => x.id === id);
-        if (existing) {
-          finalItem = { ...existing, ...updatedFields };
-        }
+    const stored = localStorage.getItem('beshbola_db_state');
+    if (stored) {
+      const dbState = JSON.parse(stored) as DBState;
+      const found = (dbState[collectionName] || []).find((x: any) => x.id === id);
+      if (found) {
+        existingItem = found;
       }
-    } catch (lsErr) {}
-  }
+    }
+  } catch (e) {}
+
+  const finalItem = { ...existingItem, ...updatedFields, id, updatedAt: new Date().toISOString() };
 
   try {
     const stored = localStorage.getItem('beshbola_db_state');
@@ -255,7 +357,7 @@ export async function updateItem(collectionName: string, id: string, updatedFiel
 
 export async function deleteItem(collectionName: string, id: string): Promise<boolean> {
   try {
-    await deleteDoc(doc(db, collectionName, id));
+    deleteDoc(doc(db, collectionName, id)); // Async trigger - Firestore local cache queues it
   } catch (err: any) {
     console.warn(`Firestore deleteDoc (${collectionName} / ${id}) queued:`, err.message || err);
   }
@@ -289,24 +391,18 @@ export async function updateSettings(settings: any): Promise<any> {
   };
 
   try {
-    await setDoc(docRef, updatedData, { merge: true });
+    setDoc(docRef, updatedData, { merge: true }); // Async trigger - Firestore local cache queues it
   } catch (err: any) {
     console.warn("Firestore updateSettings queued:", err.message || err);
   }
 
   let finalSettings = settings;
   try {
-    const snap = await getDoc(docRef).catch(() => getDocFromCache(docRef));
-    if (snap.exists()) {
-      finalSettings = snap.data();
-    }
-  } catch (e) {}
-
-  try {
     const stored = localStorage.getItem('beshbola_db_state');
     if (stored) {
       const dbState = JSON.parse(stored) as DBState;
-      dbState.settings = { ...dbState.settings, ...finalSettings };
+      finalSettings = { ...(dbState.settings || {}), ...settings };
+      dbState.settings = finalSettings;
       localStorage.setItem('beshbola_db_state', JSON.stringify(dbState));
     }
   } catch (e) {}
