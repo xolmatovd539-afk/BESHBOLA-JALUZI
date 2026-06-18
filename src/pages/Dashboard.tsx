@@ -213,9 +213,9 @@ export default function Dashboard() {
               </motion.div>
             </div>
             
-            <a href="/settings" className="block w-full py-3.5 sm:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-[1.5rem] font-black text-xs sm:text-sm tracking-tight hover:bg-indigo-505 transition-all shadow-2xl shadow-indigo-600/30 active:scale-[0.98] text-center">
+            <Link to="/settings" className="block w-full py-3.5 sm:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-[1.5rem] font-black text-xs sm:text-sm tracking-tight hover:bg-indigo-505 transition-all shadow-2xl shadow-indigo-600/30 active:scale-[0.98] text-center">
               Kursni yangilash
-            </a>
+            </Link>
           </div>
           
           {/* Animated Background Element */}
