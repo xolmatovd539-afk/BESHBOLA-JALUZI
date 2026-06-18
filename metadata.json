@@ -1,0 +1,13 @@
+{
+  "name": "Remix: SmartCurtain",
+  "description": "Virtual curtain and blind visualizer with integrated inventory management, currency tracking, and automated pricing calculator.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "Image Visualization",
+    "Inventory Management",
+    "Financial Calculators",
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

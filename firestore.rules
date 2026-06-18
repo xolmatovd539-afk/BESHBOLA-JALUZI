@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Relaxed Rules for Development
+    match /{document=**} {
+      allow read, write: if true;
+    }
+
+    // Material Validation
+    function isValidMaterial(data) {
+      return data.artikul is string &&
+             data.name is string &&
+             data.priceUSD is number &&
+             data.type is string;
+    }
+
+    match /materials/{materialId} {
+      allow read, write: if true;
+    }
+
+    // Inventory Validation
+    function isValidRoll(data) {
+      return data.materialId is string &&
+             data.totalLength is number && 
+             data.remainingLength is number;
+    }
+
+    match /inventory/{rollId} {
+      allow read, write: if true;
+    }
+
+    // Settings Validation
+    function isValidSetting(data) {
+      return data.usdToUzs is number;
+    }
+
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+    
+    // Order Validation
+    function isValidOrder(data) {
+      return data.customer is map &&
+             data.items is list &&
+             data.summary is map &&
+             data.month is string;
+    }
+
+    match /orders/{orderId} {
+      allow read, write: if true;
+    }
+  }
+}

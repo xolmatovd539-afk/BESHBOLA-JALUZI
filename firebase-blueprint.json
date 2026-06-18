@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "Material": {
+      "title": "Material",
+      "description": "Fabric/Texture details for curtains and blinds",
+      "type": "object",
+      "properties": {
+        "artikul": { "type": "string", "description": "Unique ID code" },
+        "name": { "type": "string" },
+        "country": { "type": "string" },
+        "image": { "type": "string", "description": "Texture image URL" },
+        "priceUSD": { "type": "number" },
+        "type": { "type": "string", "enum": ["Plesse", "Combo", "Dikey", "Vertical", "Horizontal", "Bambuk"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["artikul", "name", "priceUSD", "type"]
+    },
+    "InventoryRoll": {
+      "title": "Inventory Roll",
+      "description": "Specific roll of material in stock",
+      "type": "object",
+      "properties": {
+        "materialId": { "type": "string" },
+        "totalLength": { "type": "number", "description": "Initial length in meters" },
+        "remainingLength": { "type": "number", "description": "Current length in meters" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["materialId", "totalLength", "remainingLength"]
+    },
+    "Setting": {
+      "title": "Global Setting",
+      "description": "App settings like currency rates",
+      "type": "object",
+      "properties": {
+        "usdToUzs": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order with items and summary",
+      "type": "object",
+      "properties": {
+        "customer": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "address": { "type": "string" },
+            "date": { "type": "string", "format": "date" }
+          }
+        },
+        "items": { "type": "array" },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "totalQty": { "type": "number" },
+            "totalKv": { "type": "number" },
+            "subtotal": { "type": "number" },
+            "qqs": { "type": "number" },
+            "total": { "type": "number" }
+          }
+        },
+        "manager": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "phone": { "type": "string" }
+          }
+        },
+        "month": { "type": "string", "description": "YYYY-MM for filtering" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customer", "items", "summary", "month"]
+    }
+  },
+  "firestore": {
+    "/materials": {
+      "schema": "Material",
+      "description": "Catalog of available curtain materials"
+    },
+    "/inventory": {
+      "schema": "InventoryRoll",
+      "description": "Real-time stock of fabric rolls"
+    },
+    "/settings": {
+      "schema": "Setting",
+      "description": "App-wide configuration"
+    },
+    "/orders": {
+      "schema": "Order",
+      "description": "Stored customer orders and invoices"
+    }
+  }
+}
