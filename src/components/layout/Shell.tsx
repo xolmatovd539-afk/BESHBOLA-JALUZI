@@ -32,22 +32,45 @@ const navItems = [
 
 export function Shell({ children }: ShellProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [globalRate, setGlobalRate] = useState<number>(12650);
+  const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  const [globalRate, setGlobalRate] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('beshbola_db_state');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.settings?.usdToUzs) {
+          return parsed.settings.usdToUzs;
+        }
+      }
+    } catch (e) {}
+    return 12650;
+  });
+
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const authorName = "Fergana Doston";
 
   useEffect(() => {
+    // Online / Offline listeners
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Snapshot with offline resiliency
     const unsub = onSnapshot(doc(db, 'settings', 'global'), async (snap) => {
       if (snap.exists()) {
-        const data = snap.exists() ? snap.data() : { usdToUzs: 12650, lastUpdated: new Date().toISOString() };
-        setGlobalRate(data.usdToUzs || 12650);
+        const data = snap.data();
+        const rateVal = data?.usdToUzs || 12650;
+        setGlobalRate(rateVal);
         
         const now = new Date();
-        const last = data.lastUpdated ? new Date(data.lastUpdated) : new Date(0);
+        const last = data?.lastUpdated ? new Date(data.lastUpdated) : new Date(0);
         const hoursPassed = (now.getTime() - last.getTime()) / (1000 * 60 * 60);
 
-        // Har soatda avtomatik yangilash (agar 1 soatdan ko'p o'tgan bo'lsa)
-        if (hoursPassed >= 1) {
+        // Har soatda avtomatik yangilash (agar 1 soatdan ko'p o'tgan bo'lsa va tarmoq ulangan bo'lsa)
+        if (hoursPassed >= 1 && navigator.onLine) {
           try {
             const resp = await fetch('https://cbu.uz/uz/arkhiv-kursov-valyut/json/');
             const cbuData = await resp.json();
@@ -61,32 +84,36 @@ export function Shell({ children }: ShellProps) {
               }, { merge: true });
             }
           } catch (err) {
-            console.error("CBU Auto Sync Write Error:", err instanceof Error ? err.message : err);
-            if (err instanceof Error && err.message.includes('permission')) {
-               console.warn("Permission denied while updating currency rate. Check firestore.rules for /settings/global");
-            }
+            console.warn("CBU Auto Sync Write Error (expected if offline):", err instanceof Error ? err.message : err);
           }
         }
 
-        if (data.lastUpdated) {
+        if (data?.lastUpdated) {
           const date = new Date(data.lastUpdated);
           setLastUpdated(date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }));
         }
       } else {
         // Fallback or Initial create
-        try {
-          await setDoc(doc(db, 'settings', 'global'), {
-            usdToUzs: 12650,
-            lastUpdated: new Date().toISOString()
-          });
-        } catch (err) {
-          handleFirestoreError(err, OperationType.WRITE, 'settings/global');
+        if (navigator.onLine) {
+          try {
+            await setDoc(doc(db, 'settings', 'global'), {
+              usdToUzs: 12650,
+              lastUpdated: new Date().toISOString()
+            });
+          } catch (err) {
+            console.warn("Could not create initial global settings document:", err);
+          }
         }
       }
     }, (err) => {
-      handleFirestoreError(err, OperationType.GET, 'settings/global');
+      console.warn("onSnapshot failed for settings/global (safely continuing offline):", err.message || err);
     });
-    return () => unsub();
+
+    return () => {
+      unsub();
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   return (
@@ -150,8 +177,22 @@ export function Shell({ children }: ShellProps) {
             </div>
             
             <div className="flex space-x-2 md:space-x-4 items-center">
-              <div className="flex items-center space-x-2 bg-white/40 border border-white/50 px-3 py-1.5 md:px-5 md:py-2.5 rounded-xl md:rounded-2xl shadow-sm text-indigo-600 text-[9px] md:text-xs font-black tracking-tight">
-                <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></span>
+              {/* Online / Offline status */}
+              <div className={cn(
+                "flex items-center space-x-1.5 px-3 py-1.5 md:px-4 md:py-2.5 rounded-xl md:rounded-2xl shadow-sm text-[9px] md:text-xs font-black tracking-tight border transition-all duration-300",
+                isOnline 
+                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                  : "bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse"
+              )}>
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  isOnline ? "bg-emerald-500" : "bg-amber-500"
+                )} />
+                <span>{isOnline ? "ONLAYN" : "OFFLAYN REJIM"}</span>
+              </div>
+
+              <div className="flex items-center space-x-2 bg-white/40 border border-white/50 px-3 py-1.5 md:px-5 md:py-2.5 rounded-xl md:rounded-2xl shadow-sm text-indigo-600 text-[9px] md:text-xs font-black tracking-tight-dense">
+                <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></span>
                 <span>$1 = {globalRate.toLocaleString()} UZS</span>
               </div>
             </div>
@@ -164,11 +205,19 @@ export function Shell({ children }: ShellProps) {
             </div>
             
             {/* Bottom Alert Bar Integrated into Content Box */}
-            <footer className="h-10 md:h-12 lg:h-14 bg-indigo-600/90 backdrop-blur-md text-white flex items-center px-4 md:px-8 space-x-4 md:space-x-8 overflow-hidden whitespace-nowrap flex-shrink-0">
+            <footer className={cn(
+              "h-10 md:h-12 lg:h-14 text-white flex items-center px-4 md:px-8 space-x-4 md:space-x-8 overflow-hidden whitespace-nowrap flex-shrink-0 transition-colors duration-500",
+              isOnline ? "bg-indigo-600/90 backdrop-blur-md" : "bg-amber-600/90 backdrop-blur-md"
+            )}>
               <div className="flex items-center space-x-2 flex-shrink-0">
-                <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(251,146,60,0.8)]" />
-                <span className="text-[9px] font-black uppercase tracking-widest leading-none">Status:</span>
-                <span className="text-[10px] md:text-xs font-bold tracking-tight">Kurs {lastUpdated || 'hozirgina'}</span>
+                <div className={cn(
+                  "w-1.5 h-1.5 rounded-full animate-pulse shadow-md",
+                  isOnline ? "bg-emerald-400 shadow-emerald-500/50" : "bg-white shadow-white/50"
+                )} />
+                <span className="text-[9px] font-black uppercase tracking-widest leading-none">TIZIM:</span>
+                <span className="text-[10px] md:text-xs font-bold tracking-tight">
+                  {isOnline ? `Onlayn • Kurs: ${lastUpdated || 'hozirgina'}` : "Internet yo'q • Avtonom (Ooflayn) rejimda to'liq ishlamoqda"}
+                </span>
               </div>
               <div className="w-px h-5 bg-white/20 hidden lg:block"></div>
               <div className="flex items-center space-x-2">
