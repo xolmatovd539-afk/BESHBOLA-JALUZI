@@ -7,12 +7,32 @@ import fs from 'fs';
 
 dotenv.config();
 
-const firebaseConfig = JSON.parse(
-  fs.readFileSync(path.resolve(process.cwd(), 'firebase-applet-config.json'), 'utf8')
-);
+let firebaseConfig: any = {};
+try {
+  const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } else {
+    console.warn("[Firebase Config Warning] firebase-applet-config.json file not found at path:", configPath);
+  }
+} catch (err) {
+  console.error("Failed to load firebase config on startup:", err);
+}
 
 // Local Database Implementation (Solid FS based persistence)
-const DB_PATH = path.join(process.cwd(), 'data', 'db.json');
+let DB_PATH = path.join(process.cwd(), 'data', 'db.json');
+try {
+  const testDir = path.join(process.cwd(), 'data');
+  if (!fs.existsSync(testDir)) {
+    fs.mkdirSync(testDir, { recursive: true });
+  }
+  const testFile = path.join(testDir, '.write-test');
+  fs.writeFileSync(testFile, 'test');
+  fs.unlinkSync(testFile);
+} catch (e) {
+  console.warn("Read-only filesystem detected (e.g. Vercel). Falling back database storage to /tmp/db.json");
+  DB_PATH = path.join('/tmp', 'db.json');
+}
 
 function readLocalDb() {
   try {
@@ -53,9 +73,14 @@ function writeLocalDb(data: any) {
 // REST Client to Firestore for server-side backup & bootstrapping
 async function fetchFirebaseDocREST(collectionName: string) {
   try {
-    const projectId = firebaseConfig.projectId;
-    const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
-    const apiKey = firebaseConfig.apiKey;
+    const projectId = firebaseConfig?.projectId;
+    const dbId = firebaseConfig?.firestoreDatabaseId || '(default)';
+    const apiKey = firebaseConfig?.apiKey;
+    
+    if (!projectId || !apiKey || projectId.includes("placeholder") || projectId.includes("remixed-project")) {
+      console.log(`[Firestore REST] Skipping cloud sync for ${collectionName}: Firebase is not configured or uses placeholder credentials.`);
+      return [];
+    }
     
     const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${dbId}/documents/${collectionName}?key=${apiKey}`;
     const response = await fetch(url);
@@ -118,9 +143,15 @@ async function fetchFirebaseDocREST(collectionName: string) {
 
 async function fetchFirebaseSettingsREST() {
   try {
-    const projectId = firebaseConfig.projectId;
-    const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
-    const apiKey = firebaseConfig.apiKey;
+    const projectId = firebaseConfig?.projectId;
+    const dbId = firebaseConfig?.firestoreDatabaseId || '(default)';
+    const apiKey = firebaseConfig?.apiKey;
+    
+    if (!projectId || !apiKey || projectId.includes("placeholder") || projectId.includes("remixed-project")) {
+      console.log(`[Firestore REST] Skipping cloud sync for settings: Firebase is not configured or uses placeholder credentials.`);
+      return null;
+    }
+    
     const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${dbId}/documents/settings/global?key=${apiKey}`;
     const response = await fetch(url);
     if (!response.ok) return null;
@@ -264,88 +295,130 @@ async function startServer() {
 
   // REST API CRUD endpoints for full-stack data persistence (materials, orders, inventory, settings)
   app.get('/api/db', (req, res) => {
-    res.json(readLocalDb());
+    try {
+      res.json(readLocalDb());
+    } catch (err: any) {
+      console.error("GET /api/db error:", err);
+      res.status(500).json({ error: err.message || "Ma'lumotlar bazasini yuklashda xatolik yuz berdi." });
+    }
   });
 
   app.get('/api/db/:collection', (req, res) => {
-    const { collection } = req.params;
-    const db = readLocalDb();
-    if (!db[collection]) {
-      return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
+    try {
+      const { collection } = req.params;
+      const db = readLocalDb();
+      if (!db[collection]) {
+        return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
+      }
+      res.json(db[collection]);
+    } catch (err: any) {
+      console.error(`GET /api/db/${req.params.collection} error:`, err);
+      res.status(500).json({ error: err.message || "Kolleksiyani o'qishda xatolik yuz berdi." });
     }
-    res.json(db[collection]);
   });
 
   app.post('/api/db/:collection', (req, res) => {
-    const { collection } = req.params;
-    const item = req.body;
-    
-    const db = readLocalDb();
-    if (!db[collection]) {
-      db[collection] = [];
+    try {
+      const { collection } = req.params;
+      const item = req.body;
+      
+      const db = readLocalDb();
+      if (!db[collection]) {
+        db[collection] = [];
+      }
+      
+      if (!Array.isArray(db[collection])) {
+        return res.status(400).json({ error: `Kolleksiya massiv bo'lishi kerak, lekin u boshqa tipda: ${collection}` });
+      }
+      
+      // Generate a secure unique ID if missing
+      if (!item.id) {
+        item.id = Date.now().toString() + Math.random().toString(36).substring(2, 7);
+      }
+      if (!item.createdAt) {
+        item.createdAt = new Date().toISOString();
+      }
+      
+      db[collection].push(item);
+      writeLocalDb(db);
+      res.json({ success: true, item });
+    } catch (err: any) {
+      console.error(`POST /api/db/${req.params.collection} error:`, err);
+      res.status(500).json({ error: err.message || "Kolleksiyaga element qo'shishda xatolik yuz berdi." });
     }
-    
-    // Generate a secure unique ID if missing
-    if (!item.id) {
-      item.id = Date.now().toString() + Math.random().toString(36).substring(2, 7);
-    }
-    if (!item.createdAt) {
-      item.createdAt = new Date().toISOString();
-    }
-    
-    db[collection].push(item);
-    writeLocalDb(db);
-    res.json({ success: true, item });
   });
 
   app.put('/api/db/:collection/:id', (req, res) => {
-    const { collection, id } = req.params;
-    const updatedFields = req.body;
-    
-    const db = readLocalDb();
-    if (!db[collection]) {
-      return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
+    try {
+      const { collection, id } = req.params;
+      const updatedFields = req.body;
+      
+      const db = readLocalDb();
+      if (!db[collection]) {
+        return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
+      }
+      
+      if (!Array.isArray(db[collection])) {
+        return res.status(400).json({ error: `Kolleksiya massiv bo'lishi kerak, lekin u boshqa tipda: ${collection}` });
+      }
+      
+      const idx = db[collection].findIndex((item: any) => item.id === id);
+      if (idx === -1) {
+        return res.status(404).json({ error: `Kolleksiya elementi topilmadi, ID: ${id}` });
+      }
+      
+      db[collection][idx] = { 
+        ...db[collection][idx], 
+        ...updatedFields, 
+        updatedAt: new Date().toISOString() 
+      };
+      writeLocalDb(db);
+      res.json({ success: true, item: db[collection][idx] });
+    } catch (err: any) {
+      console.error(`PUT /api/db/${req.params.collection}/${req.params.id} error:`, err);
+      res.status(500).json({ error: err.message || "Elementni tahrirlashda xatolik yuz berdi." });
     }
-    
-    const idx = db[collection].findIndex((item: any) => item.id === id);
-    if (idx === -1) {
-      return res.status(404).json({ error: `Kolleksiya elementi topilmadi, ID: ${id}` });
-    }
-    
-    db[collection][idx] = { 
-      ...db[collection][idx], 
-      ...updatedFields, 
-      updatedAt: new Date().toISOString() 
-    };
-    writeLocalDb(db);
-    res.json({ success: true, item: db[collection][idx] });
   });
 
   app.delete('/api/db/:collection/:id', (req, res) => {
-    const { collection, id } = req.params;
-    
-    const db = readLocalDb();
-    if (!db[collection]) {
-      return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
+    try {
+      const { collection, id } = req.params;
+      
+      const db = readLocalDb();
+      if (!db[collection]) {
+        return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
+      }
+      
+      if (!Array.isArray(db[collection])) {
+        return res.status(400).json({ error: `Kolleksiya massiv bo'lishi kerak, lekin u boshqa tipda: ${collection}` });
+      }
+      
+      const initialLen = db[collection].length;
+      db[collection] = db[collection].filter((item: any) => item.id !== id);
+      
+      if (db[collection].length === initialLen) {
+        return res.status(404).json({ error: `O'chirish uchun element topilmadi, ID: ${id}` });
+      }
+      
+      writeLocalDb(db);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error(`DELETE /api/db/${req.params.collection}/${req.params.id} error:`, err);
+      res.status(500).json({ error: err.message || "Elementni o'chirishda xatolik yuz berdi." });
     }
-    
-    const initialLen = db[collection].length;
-    db[collection] = db[collection].filter((item: any) => item.id !== id);
-    
-    if (db[collection].length === initialLen) {
-      return res.status(404).json({ error: `O'chirish uchun element topilmadi, ID: ${id}` });
-    }
-    
-    writeLocalDb(db);
-    res.json({ success: true });
   });
 
   app.post('/api/db-settings', (req, res) => {
-    const settings = req.body;
-    const db = readLocalDb();
-    db.settings = { ...db.settings, ...settings };
-    writeLocalDb(db);
-    res.json({ success: true, settings: db.settings });
+    try {
+      const settings = req.body;
+      const db = readLocalDb();
+      db.settings = { ...db.settings, ...settings };
+      writeLocalDb(db);
+      res.json({ success: true, settings: db.settings });
+    } catch (err: any) {
+      console.error("POST /api/db-settings error:", err);
+      res.status(500).json({ error: err.message || "Sozlamalarni saqlashda xatolik yuz berdi." });
+    }
   });
 
   // Server Frontend via Vite or Static Files

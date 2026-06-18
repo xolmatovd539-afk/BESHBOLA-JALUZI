@@ -349,16 +349,6 @@ export default function Orders() {
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 leading-tight">Hisob-kitob <span className="text-indigo-600">Varaqasi</span></h2>
           <p className="text-xs sm:text-sm lg:text-base text-slate-500 mt-1 md:mt-2 font-medium">Yangi buyurtma hisob-kitobini yaratish va saqlash.</p>
         </div>
-        <div className="flex">
-          <button 
-            onClick={startExportFlow}
-            disabled={isSaving}
-            className="w-full sm:w-auto h-11 sm:h-14 px-6 sm:px-8 bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm tracking-tight hover:bg-slate-800 active:scale-95 shadow-xl transition-all flex items-center justify-center gap-2 sm:gap-3 disabled:opacity-50"
-          >
-            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-            <span>Saqlash</span>
-          </button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
@@ -602,19 +592,19 @@ export default function Orders() {
               </div>
             )}
 
-            {items.length > 0 && (
-              <div className="mt-10 flex justify-end">
-                <button 
-                  onClick={startExportFlow}
-                  className="px-10 py-5 bg-slate-900 text-white rounded-2xl font-black text-sm tracking-tight hover:bg-slate-800 transition-all shadow-2xl flex items-center gap-3"
-                >
-                  <Save size={20} />
-                  HISOBNI YAKUNLASH VA SAQLASH
-                </button>
-              </div>
-            )}
           </div>
         </div>
+      </div>
+
+      <div className="flex justify-end pt-4">
+        <button 
+          onClick={startExportFlow}
+          disabled={isSaving}
+          className="w-full sm:w-auto min-w-[280px] h-14 sm:h-16 px-10 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl sm:rounded-3xl font-black text-sm uppercase tracking-wider shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+        >
+          {isSaving ? <Loader2 size={22} className="animate-spin" /> : <Save size={22} />}
+          <span>HISOBNI YAKUNLASH VA SAQLASH</span>
+        </button>
       </div>
 
       <AnimatePresence>
