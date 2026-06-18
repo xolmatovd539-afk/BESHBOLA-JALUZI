@@ -103,34 +103,34 @@ export default function Inventory() {
   );
 
   return (
-    <div className="space-y-6 lg:space-y-10 lg:p-8 animate-in fade-in duration-1000">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div className="space-y-4 md:space-y-6 lg:space-y-10 p-3 sm:p-6 lg:p-8 animate-in fade-in duration-1000">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl lg:text-4xl font-black tracking-tight text-slate-900">Ombor zaxirasi</h2>
-          <p className="text-sm lg:text-base text-slate-500 mt-2 font-medium">Rulonlarni monitoring qilish va metrajni chegirish.</p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900">Ombor zaxirasi</h2>
+          <p className="text-xs sm:text-sm lg:text-base text-slate-500 mt-1 md:mt-2 font-medium">Rulonlarni monitoring qilish va metrajni chegirish.</p>
         </div>
         
         <button 
           onClick={() => setIsAdding(true)}
-          className="h-14 px-8 bg-slate-900 text-white rounded-2xl font-black text-sm tracking-tight hover:bg-slate-800 active:scale-95 shadow-2xl transition-all flex items-center justify-center gap-3"
+          className="h-11 sm:h-14 px-6 sm:px-8 bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm tracking-tight hover:bg-slate-800 active:scale-95 shadow-xl transition-all flex items-center justify-center gap-2"
         >
-          <Plus size={22} strokeWidth={3} />
+          <Plus size={18} strokeWidth={3} />
           <span>Yangi rulon</span>
         </button>
       </div>
 
-      <div className="flex items-center gap-4 p-5 glass rounded-[2rem] shadow-xl focus-within:bg-white/80 transition-all border border-white/40">
-        <Search className="text-slate-400" size={24} strokeWidth={2.5} />
+      <div className="flex items-center gap-3 p-4 sm:p-5 glass rounded-2xl sm:rounded-[2rem] shadow-xl focus-within:bg-white/80 transition-all border border-white/40">
+        <Search className="text-slate-400" size={20} strokeWidth={2.5} />
         <input 
           type="text" 
           placeholder="Artikul yoki ID bo'yicha qidirish..." 
-          className="flex-1 bg-transparent border-none outline-none text-base font-black text-slate-900 placeholder:text-slate-400 placeholder:font-medium uppercase tracking-tight"
+          className="flex-1 bg-transparent border-none outline-none text-sm sm:text-base font-black text-slate-900 placeholder:text-slate-400 placeholder:font-medium uppercase tracking-tight"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {filteredItems.map((item, i) => (
           <motion.div
             layout
@@ -138,14 +138,14 @@ export default function Inventory() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.05 }}
             key={item.id}
-            className="p-8 glass rounded-[2.5rem] relative overflow-hidden group hover:scale-[1.02] transition-all hover:bg-white/80"
+            className="p-5 sm:p-8 glass rounded-2xl sm:rounded-[2.5rem] relative overflow-hidden group hover:scale-[1.02] transition-all hover:bg-white/80"
           >
-            <div className="flex justify-between items-start mb-8">
+            <div className="flex justify-between items-start mb-6 sm:mb-8">
               <div>
-                <h3 className="font-black text-slate-900 text-base lg:text-lg leading-none uppercase tracking-tight">{item.materialId}</h3>
-                <div className="flex items-center gap-2 mt-3">
-                  <span className="text-[10px] text-slate-400 font-black tracking-widest bg-slate-50 px-2 py-0.5 rounded-md">ID: {item.id.slice(0, 8)}</span>
-                  <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase">{item.warehouse || 'Asosiy'}</span>
+                <h3 className="font-black text-slate-900 text-sm sm:text-base lg:text-lg leading-none uppercase tracking-tight">{item.materialId}</h3>
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3">
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-black tracking-widest bg-slate-50 px-1.5 py-0.5 rounded-md">ID: {item.id.slice(0, 8)}</span>
+                  <span className="text-[9px] sm:text-[10px] text-indigo-400 font-black tracking-widest uppercase">{item.warehouse || 'Asosiy'}</span>
                 </div>
               </div>
               <div className="flex gap-2">

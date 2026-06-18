@@ -495,22 +495,22 @@ export default function Visualizer() {
 
   return (
     <div className="min-h-full w-full flex flex-col liquid-bg">
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 lg:p-10 lg:max-h-[calc(100vh-14rem)] lg:min-h-0">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 p-3 sm:p-6 lg:p-10 lg:max-h-[calc(100vh-14rem)] lg:min-h-0">
         
         {/* Visualizer Area */}
-        <section className="lg:col-span-8 glass rounded-[3rem] relative overflow-hidden group min-h-[500px] lg:h-full lg:min-h-0 shadow-2xl animate-in fade-in zoom-in-95 duration-1000">
+        <section className="lg:col-span-8 glass rounded-2xl sm:rounded-[3rem] relative overflow-hidden group min-h-[350px] sm:min-h-[500px] lg:h-full lg:min-h-0 shadow-2xl animate-in fade-in zoom-in-95 duration-1000">
           {!image ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 lg:p-10 text-center bg-transparent">
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 text-center bg-transparent">
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                className="p-8 bg-indigo-600 shadow-2xl shadow-indigo-200 rounded-[2.5rem] mb-6 text-white rotate-3"
+                className="p-6 sm:p-8 bg-indigo-600 shadow-2xl shadow-indigo-200 rounded-[1.75rem] sm:rounded-[2.5rem] mb-4 sm:mb-6 text-white rotate-3"
               >
-                <Camera size={44} strokeWidth={2.5} />
+                <Camera size={36} strokeWidth={2.5} />
               </motion.div>
               
-              <h2 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight">Smart Vizualizator</h2>
-              <p className="text-slate-500 mt-3 max-w-md mx-auto text-sm font-semibold leading-relaxed">
+              <h2 className="text-xl sm:text-2xl lg:text-4xl font-black text-slate-900 tracking-tight">Smart Vizualizator</h2>
+              <p className="text-slate-500 mt-2 sm:mt-3 max-w-sm mx-auto text-xs sm:text-sm font-semibold leading-relaxed">
                 Interyeringiz suratini yuklang va sun'iy intellekt yordamida matolarni sinab ko'ring.
               </p>
 

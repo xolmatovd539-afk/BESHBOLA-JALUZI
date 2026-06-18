@@ -343,80 +343,80 @@ export default function Orders() {
   };
 
   return (
-    <div className="space-y-6 lg:space-y-10 lg:p-8 animate-in fade-in duration-1000">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div className="space-y-4 md:space-y-6 lg:space-y-10 p-3 sm:p-6 lg:p-8 animate-in fade-in duration-1000">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl lg:text-4xl font-black tracking-tight text-slate-900 leading-tight">Hisob-kitob <span className="text-indigo-600">Varaqasi</span></h2>
-          <p className="text-sm lg:text-base text-slate-500 mt-2 font-medium">Yangi buyurtma hisob-kitobini yaratish va saqlash.</p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 leading-tight">Hisob-kitob <span className="text-indigo-600">Varaqasi</span></h2>
+          <p className="text-xs sm:text-sm lg:text-base text-slate-500 mt-1 md:mt-2 font-medium">Yangi buyurtma hisob-kitobini yaratish va saqlash.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex">
           <button 
             onClick={startExportFlow}
             disabled={isSaving}
-            className="h-14 px-8 bg-slate-900 text-white rounded-2xl font-black text-sm tracking-tight hover:bg-slate-800 active:scale-95 shadow-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+            className="w-full sm:w-auto h-11 sm:h-14 px-6 sm:px-8 bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm tracking-tight hover:bg-slate-800 active:scale-95 shadow-xl transition-all flex items-center justify-center gap-2 sm:gap-3 disabled:opacity-50"
           >
-            {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             <span>Saqlash</span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Customer Form */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="glass p-8 rounded-[2.5rem] border border-white/40 space-y-6">
-            <h3 className="text-xl font-black text-slate-900 mb-2">Mijoz Ma'lumotlari</h3>
+          <div className="glass p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-white/40 space-y-4 sm:space-y-6">
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-2">Mijoz Ma'lumotlari</h3>
             
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">F.I.O</label>
+              <div className="space-y-1.5">
+                <label className="text-[9px] sm:text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">F.I.O</label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <input 
                     type="text" 
                     placeholder="Mijoz ismi..."
-                    className="w-full bg-white/50 border border-white/60 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300"
+                    className="w-full bg-white/50 border border-white/60 rounded-xl sm:rounded-2xl pl-11 pr-5 py-3 sm:py-4 text-xs sm:text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300"
                     value={customer.name}
                     onChange={e => setCustomer({...customer, name: e.target.value})}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Telefon</label>
+              <div className="space-y-1.5">
+                <label className="text-[9px] sm:text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Telefon</label>
                 <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <input 
                     type="text" 
                     placeholder="+998..."
-                    className="w-full bg-white/50 border border-white/60 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300"
+                    className="w-full bg-white/50 border border-white/60 rounded-xl sm:rounded-2xl pl-11 pr-5 py-3 sm:py-4 text-xs sm:text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300"
                     value={customer.phone}
                     onChange={e => setCustomer({...customer, phone: e.target.value})}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Manzil</label>
+              <div className="space-y-1.5">
+                <label className="text-[9px] sm:text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Manzil</label>
                 <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <input 
                     type="text" 
                     placeholder="Shahar, tuman..."
-                    className="w-full bg-white/50 border border-white/60 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300"
+                    className="w-full bg-white/50 border border-white/60 rounded-xl sm:rounded-2xl pl-11 pr-5 py-3 sm:py-4 text-xs sm:text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300"
                     value={customer.address}
                     onChange={e => setCustomer({...customer, address: e.target.value})}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Sana</label>
+              <div className="space-y-1.5">
+                <label className="text-[9px] sm:text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Sana</label>
                 <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <input 
                     type="date" 
-                    className="w-full bg-white/50 border border-white/60 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-full bg-white/50 border border-white/60 rounded-xl sm:rounded-2xl pl-11 pr-5 py-3 sm:py-4 text-xs sm:text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     value={customer.date}
                     onChange={e => setCustomer({...customer, date: e.target.value})}
                   />
@@ -425,53 +425,53 @@ export default function Orders() {
             </div>
           </div>
 
-          <div className="glass p-8 rounded-[2.5rem] border border-white/40 space-y-4">
-            <div className="flex justify-between items-center text-sm font-bold text-slate-500">
+          <div className="glass p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-white/40 space-y-4">
+            <div className="flex justify-between items-center text-xs sm:text-sm font-bold text-slate-500">
               <span>Jami dona</span>
               <span className="text-slate-900 font-black">{totalQty} dona</span>
             </div>
-            <div className="flex justify-between items-center text-sm font-bold text-slate-500">
+            <div className="flex justify-between items-center text-xs sm:text-sm font-bold text-slate-500">
               <span>Umumiy m²</span>
               <span className="text-slate-900 font-black">{totalKv.toFixed(2)} m²</span>
             </div>
             
             <div className="pt-4 border-t border-slate-100 space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-slate-500 uppercase tracking-tight">Jami Summa</span>
-                <span className="text-xl font-black text-slate-900">${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-tight">Jami Summa</span>
+                <span className="text-lg sm:text-xl font-black text-slate-900">${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Berilgan Summa (Oldindan)</label>
+                <label className="text-[9px] sm:text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Berilgan Summa (Oldindan)</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                   <input 
                     type="text" 
                     placeholder="0.00"
-                    className="w-full bg-indigo-50/50 border border-indigo-100 rounded-2xl pl-10 pr-6 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300"
+                    className="w-full bg-indigo-50/50 border border-indigo-100 rounded-xl sm:rounded-2xl pl-9 pr-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-300"
                     value={advancePayment}
                     onChange={e => setAdvancePayment(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex justify-between items-center bg-indigo-50/30 -mx-8 px-8 py-4">
-                <span className="text-base font-black text-slate-900 uppercase tracking-tight">Qolgan To'lov</span>
-                <span className="text-2xl font-black text-red-600">${remainingBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              <div className="pt-4 border-t border-slate-100 flex justify-between items-center bg-indigo-50/30 -mx-5 px-5 sm:-mx-8 sm:px-8 py-4">
+                <span className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight">Qolgan To'lov</span>
+                <span className="text-xl sm:text-2xl font-black text-red-600">${remainingBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Table Area */}
-        <div className="lg:col-span-2 glass p-8 rounded-[2.5rem] border border-white/40 overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-black text-slate-900">Mahsulotlar Jadvali</h3>
+        <div className="lg:col-span-2 glass p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-white/40 overflow-hidden flex flex-col">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h3 className="text-lg sm:text-xl font-black text-slate-900">Mahsulotlar Jadvali</h3>
             <button 
               onClick={addItem}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-500 active:scale-95 transition-all flex items-center gap-2 shadow-xl shadow-indigo-100"
+              className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-505 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-xl"
             >
-              <Plus size={16} strokeWidth={3} />
+              <Plus size={14} strokeWidth={3} />
               Qator qo'shish
             </button>
           </div>

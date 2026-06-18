@@ -145,28 +145,28 @@ export default function Catalog() {
     : materials.filter(m => m.type === activeCategory);
 
   return (
-    <div className="space-y-6 lg:space-y-10 lg:p-8 animate-in fade-in duration-1000">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div className="space-y-4 md:space-y-6 lg:space-y-10 p-3 sm:p-6 lg:p-8 animate-in fade-in duration-1000">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl lg:text-4xl font-black tracking-tight text-slate-900">Materiallar katalogi</h2>
-          <p className="text-sm lg:text-base text-slate-500 mt-2 font-medium">Vizualizatsiya uchun matolar, turlari va narxlari.</p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900">Materiallar katalogi</h2>
+          <p className="text-xs sm:text-sm lg:text-base text-slate-500 mt-1 md:mt-2 font-medium">Vizualizatsiya uchun matolar, turlari va narxlari.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="h-14 px-8 bg-slate-900 text-white rounded-2xl font-black text-sm tracking-tight hover:bg-slate-800 active:scale-95 shadow-2xl transition-all flex items-center justify-center gap-3"
+          className="h-11 sm:h-14 px-6 sm:px-8 bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm tracking-tight hover:bg-slate-800 active:scale-95 shadow-xl transition-all flex items-center justify-center gap-2"
         >
-          <Plus size={20} strokeWidth={3} />
-          <span className="hidden sm:inline">Material qo'shish</span>
+          <Plus size={16} strokeWidth={3} />
+          <span>Material qo'shish</span>
         </button>
       </div>
 
-      <div className="flex items-center gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 lg:mx-0">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-3 px-3 lg:mx-0">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
             className={cn(
-              "px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+              "px-5 py-2 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
               activeCategory === cat 
                 ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100" 
                 : "glass text-slate-500 hover:bg-white/80"
@@ -177,11 +177,11 @@ export default function Catalog() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
         {filteredMaterials.length === 0 ? (
-          <div className="col-span-full py-20 glass rounded-[3rem] text-center">
-            <Layers size={48} className="mx-auto text-slate-300 mb-4" />
-            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Ma'lumotlar topilmadi</p>
+          <div className="col-span-full py-16 sm:py-20 glass rounded-[2rem] sm:rounded-[3rem] text-center">
+            <Layers size={40} className="mx-auto text-slate-300 mb-4" />
+            <p className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest">Ma'lumotlar topilmadi</p>
           </div>
         ) : (
           filteredMaterials.map((material, i) => (
@@ -190,7 +190,7 @@ export default function Catalog() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, type: 'spring', damping: 20 }}
               key={material.id}
-              className="group glass rounded-[2.5rem] overflow-hidden hover:scale-[1.02] transition-all hover:bg-white/80"
+              className="group glass rounded-2xl sm:rounded-[2.5rem] overflow-hidden hover:scale-[1.02] transition-all hover:bg-white/80"
             >
               <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden">
                 <img 

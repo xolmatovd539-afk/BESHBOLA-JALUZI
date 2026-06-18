@@ -359,20 +359,20 @@ export default function Reports() {
   };
 
   return (
-    <div className="space-y-6 lg:space-y-10 lg:p-8 animate-in fade-in duration-1000">
+    <div className="space-y-4 md:space-y-6 lg:space-y-10 p-3 sm:p-6 lg:p-8 animate-in fade-in duration-1000">
       
       {/* Header section */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl lg:text-4xl font-black tracking-tight text-slate-900 leading-tight">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 leading-tight">
             Oylik <span className="text-indigo-600">Hisobotlar</span>
           </h2>
-          <p className="text-sm lg:text-base text-slate-500 mt-2 font-medium">
-            Sotuvlar va daromadlar tahlili. Ma'lumotlarni ko'rish va tahrirlash uchun bo'limlarni bosing.
+          <p className="text-xs sm:text-sm lg:text-base text-slate-500 mt-1 md:mt-2 font-medium">
+            Sotuvlar va daromadlar tahlili. Bo'limlarni bosib batafsil ko'ring.
           </p>
         </div>
-        <div className="flex items-center gap-3 glass px-6 py-3 rounded-2xl border-white/60 shadow-sm">
-          <Calendar size={18} className="text-indigo-500" />
+        <div className="flex items-center gap-3 glass px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl border-white/60 shadow-sm self-start sm:self-auto">
+          <Calendar size={16} className="text-indigo-500" />
           <input 
             type="month" 
             className="bg-transparent border-none outline-none font-black text-xs uppercase tracking-widest text-slate-900 focus:ring-0 cursor-pointer"
@@ -383,29 +383,29 @@ export default function Reports() {
       </div>
 
       {/* Interactive Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
         
         {/* Card 1: Revenue */}
         <motion.div 
           onClick={() => openDetailList('revenue')}
           whileHover={{ scale: 1.02, y: -4 }}
           whileTap={{ scale: 0.98 }}
-          className="glass p-8 rounded-[2.5rem] border border-indigo-100 hover:border-indigo-300 transition-all cursor-pointer group shadow-md hover:shadow-xl relative overflow-hidden"
+          className="glass p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-indigo-100 hover:border-indigo-300 transition-all cursor-pointer group shadow-md hover:shadow-xl relative overflow-hidden"
           title="Batafsil tahlil qilish uchun bosing"
         >
           <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400">
             <ArrowUpRight size={18} />
           </div>
-          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-            <DollarSign size={24} />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 bg-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+            <DollarSign size={20} />
           </div>
           <div className="mt-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jami Tushum</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">${monthlyStats.totalRevenue.toFixed(2)}</p>
+            <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Jami Tushum</p>
+            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">${monthlyStats.totalRevenue.toFixed(2)}</p>
           </div>
-          <div className="flex items-center justify-between text-[10px] font-bold mt-4">
+          <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-bold mt-4">
             <span className="text-green-600 flex items-center gap-0.5">
-              <TrendingUp size={12} /> +12.5% o'tgan oyga nisbatan
+              <TrendingUp size={12} /> +12.5% o'tgan oydan
             </span>
             <span className="text-indigo-500 group-hover:underline">Batafsil &rarr;</span>
           </div>
@@ -416,20 +416,20 @@ export default function Reports() {
           onClick={() => openDetailList('orders')}
           whileHover={{ scale: 1.02, y: -4 }}
           whileTap={{ scale: 0.98 }}
-          className="glass p-8 rounded-[2.5rem] border border-indigo-100 hover:border-indigo-300 transition-all cursor-pointer group shadow-md hover:shadow-xl relative overflow-hidden"
+          className="glass p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-indigo-100 hover:border-indigo-300 transition-all cursor-pointer group shadow-md hover:shadow-xl relative overflow-hidden"
           title="Batafsil tahlil qilish uchun bosing"
         >
           <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400">
             <ArrowUpRight size={18} />
           </div>
-          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-            <Layers size={24} />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 bg-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+            <Layers size={20} />
           </div>
           <div className="mt-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Buyurtmalar Soni</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{monthlyStats.orderCount}</p>
+            <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Buyurtmalar Soni</p>
+            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{monthlyStats.orderCount}</p>
           </div>
-          <div className="flex items-center justify-between text-[10px] font-bold mt-4">
+          <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-bold mt-4">
             <span className="text-green-600 flex items-center gap-0.5">
               <Check size={12} /> Yangi buyurtmalar kiritilgan
             </span>
@@ -442,20 +442,20 @@ export default function Reports() {
           onClick={() => openDetailList('sqm')}
           whileHover={{ scale: 1.02, y: -4 }}
           whileTap={{ scale: 0.98 }}
-          className="glass p-8 rounded-[2.5rem] border border-indigo-100 hover:border-indigo-300 transition-all cursor-pointer group shadow-md hover:shadow-xl relative overflow-hidden"
+          className="glass p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-indigo-100 hover:border-indigo-300 transition-all cursor-pointer group shadow-md hover:shadow-xl relative overflow-hidden"
           title="Batafsil tahlil qilish uchun bosing"
         >
           <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400">
             <ArrowUpRight size={18} />
           </div>
-          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-            <TrendingUp size={24} />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 bg-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+            <TrendingUp size={20} />
           </div>
           <div className="mt-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Umumiy m²</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{monthlyStats.totalSqm.toFixed(2)} m²</p>
+            <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Umumiy m²</p>
+            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{monthlyStats.totalSqm.toFixed(2)} m²</p>
           </div>
-          <div className="flex items-center justify-between text-[10px] font-bold mt-4">
+          <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-bold mt-4">
             <span className="text-indigo-600">
               O'rtacha {(monthlyStats.totalSqm / (monthlyStats.orderCount || 1)).toFixed(1)} m²/order
             </span>
@@ -468,21 +468,21 @@ export default function Reports() {
           onClick={() => openDetailList('avg_check')}
           whileHover={{ scale: 1.02, y: -4 }}
           whileTap={{ scale: 0.98 }}
-          className="glass p-8 rounded-[2.5rem] border border-indigo-100 hover:border-indigo-300 transition-all cursor-pointer group shadow-md hover:shadow-xl relative overflow-hidden"
+          className="glass p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-indigo-100 hover:border-indigo-300 transition-all cursor-pointer group shadow-md hover:shadow-xl relative overflow-hidden"
           title="Batafsil tahlil qilish uchun bosing"
         >
           <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400">
             <ArrowUpRight size={18} />
           </div>
-          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-            <BarChart3 size={24} />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 bg-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+            <BarChart3 size={20} />
           </div>
           <div className="mt-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">O'rtacha Chek</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">${monthlyStats.avgOrder.toFixed(2)}</p>
+            <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">O'rtacha Chek</p>
+            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">${monthlyStats.avgOrder.toFixed(2)}</p>
           </div>
-          <div className="flex items-center justify-between text-[10px] font-bold mt-4">
-            <span className="text-slate-500">Filtr va hisobotlarni solishtirish</span>
+          <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-bold mt-4">
+            <span className="text-slate-500">Filtr va qiyosiy tahlil</span>
             <span className="text-indigo-500 group-hover:underline">Batafsil &rarr;</span>
           </div>
         </motion.div>
