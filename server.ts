@@ -211,215 +211,215 @@ async function syncDatabaseOnBoot() {
   console.log("[Boot Sync] Sync completed successfully.");
 }
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const PORT = 3000;
 
+// Set limits for base64 transfers
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// API Health Check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    time: new Date().toISOString(),
+    platform: 'express-vite-fullstack'
+  });
+});
+
+// Config Status Helper
+app.get('/api/config', (req, res) => {
+  res.json({
+    hasGeminiKey: !!process.env.GEMINI_API_KEY,
+  });
+});
+
+// Window Corners Detection Proxy API using Gemini
+app.post('/api/detect-windows', async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) {
+      return res.status(400).json({ error: 'Rasm ma\'lumotlari yuborilmadi (image base64 field is empty).' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
+      return res.status(500).json({ error: 'Serverda GEMINI_API_KEY sozlanmagan yoki u hali o\'zgartirilmagan. Iltimos, AI Studio sozlamalaridagi "Secrets" panelidan real API kalitni kiriting.' });
+    }
+
+    // Defensive check: strip custom surrounding quotes if any are present
+    const cleanApiKey = apiKey.trim().replace(/^["']|["']$/g, '');
+
+    const ai = new GoogleGenAI({ 
+      apiKey: cleanApiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build'
+        }
+      }
+    });
+    let base64Data = image;
+    if (image.includes(',')) {
+      base64Data = image.split(',')[1];
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: {
+        parts: [
+          { inlineData: { data: base64Data, mimeType: "image/jpeg" } },
+          { text: "Find the window areas in the image. If it's one large window, return it as a single window with 4 points. If there are clearly separate window sections, return each section separately. Return in JSON format: {\"windows\": [{\"points\": [{\"x\": 0-100, \"y\": 0-100}, ...], \"width\": meters, \"height\": meters}, ...]}." }
+        ]
+      }
+    });
+
+    const text = response.text || "";
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}') + 1;
+    
+    if (jsonStart === -1 || jsonEnd === 0) {
+      throw new Error("Sun'iy intellekt javobidan JSON topilmadi.");
+    }
+
+    const parsed = JSON.parse(text.substring(jsonStart, jsonEnd));
+    res.json(parsed);
+  } catch (error: any) {
+    console.error('API Window detection error:', error);
+    res.status(500).json({ error: error.message || 'Derazalarni sun\'iy intellekt orqali aniqlashda xatolik yuz berdi.' });
+  }
+});
+
+// REST API CRUD endpoints for full-stack data persistence (materials, orders, inventory, settings)
+app.get('/api/db', (req, res) => {
+  try {
+    res.json(readLocalDb());
+  } catch (err: any) {
+    console.error("GET /api/db error:", err);
+    res.status(500).json({ error: err.message || "Ma'lumotlar bazasini yuklashda xatolik yuz berdi." });
+  }
+});
+
+app.get('/api/db/:collection', (req, res) => {
+  try {
+    const { collection } = req.params;
+    const db = readLocalDb();
+    if (!db[collection]) {
+      return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
+    }
+    res.json(db[collection]);
+  } catch (err: any) {
+    console.error(`GET /api/db/${req.params.collection} error:`, err);
+    res.status(500).json({ error: err.message || "Kolleksiyani o'qishda xatolik yuz berdi." });
+  }
+});
+
+app.post('/api/db/:collection', (req, res) => {
+  try {
+    const { collection } = req.params;
+    const item = req.body;
+    
+    const db = readLocalDb();
+    if (!db[collection]) {
+      db[collection] = [];
+    }
+    
+    if (!Array.isArray(db[collection])) {
+      return res.status(400).json({ error: `Kolleksiya massiv bo'lishi kerak, lekin u boshqa tipda: ${collection}` });
+    }
+    
+    // Generate a secure unique ID if missing
+    if (!item.id) {
+      item.id = Date.now().toString() + Math.random().toString(36).substring(2, 7);
+    }
+    if (!item.createdAt) {
+      item.createdAt = new Date().toISOString();
+    }
+    
+    db[collection].push(item);
+    writeLocalDb(db);
+    res.json({ success: true, item });
+  } catch (err: any) {
+    console.error(`POST /api/db/${req.params.collection} error:`, err);
+    res.status(500).json({ error: err.message || "Kolleksiyaga element qo'shishda xatolik yuz berdi." });
+  }
+});
+
+app.put('/api/db/:collection/:id', (req, res) => {
+  try {
+    const { collection, id } = req.params;
+    const updatedFields = req.body;
+    
+    const db = readLocalDb();
+    if (!db[collection]) {
+      return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
+    }
+    
+    if (!Array.isArray(db[collection])) {
+      return res.status(400).json({ error: `Kolleksiya massiv bo'lishi kerak, lekin u boshqa tipda: ${collection}` });
+    }
+    
+    const idx = db[collection].findIndex((item: any) => item.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: `Kolleksiya elementi topilmadi, ID: ${id}` });
+    }
+    
+    db[collection][idx] = { 
+      ...db[collection][idx], 
+      ...updatedFields, 
+      updatedAt: new Date().toISOString() 
+    };
+    writeLocalDb(db);
+    res.json({ success: true, item: db[collection][idx] });
+  } catch (err: any) {
+    console.error(`PUT /api/db/${req.params.collection}/${req.params.id} error:`, err);
+    res.status(500).json({ error: err.message || "Elementni tahrirlashda xatolik yuz berdi." });
+  }
+});
+
+app.delete('/api/db/:collection/:id', (req, res) => {
+  try {
+    const { collection, id } = req.params;
+    
+    const db = readLocalDb();
+    if (!db[collection]) {
+      return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
+    }
+    
+    if (!Array.isArray(db[collection])) {
+      return res.status(400).json({ error: `Kolleksiya massiv bo'lishi kerak, lekin u boshqa tipda: ${collection}` });
+    }
+    
+    const initialLen = db[collection].length;
+    db[collection] = db[collection].filter((item: any) => item.id !== id);
+    
+    if (db[collection].length === initialLen) {
+      return res.status(404).json({ error: `O'chirish uchun element topilmadi, ID: ${id}` });
+    }
+    
+    writeLocalDb(db);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error(`DELETE /api/db/${req.params.collection}/${req.params.id} error:`, err);
+    res.status(500).json({ error: err.message || "Elementni o'chirishda xatolik yuz berdi." });
+  }
+});
+
+app.post('/api/db-settings', (req, res) => {
+  try {
+    const settings = req.body;
+    const db = readLocalDb();
+    db.settings = { ...db.settings, ...settings };
+    writeLocalDb(db);
+    res.json({ success: true, settings: db.settings });
+  } catch (err: any) {
+    console.error("POST /api/db-settings error:", err);
+    res.status(500).json({ error: err.message || "Sozlamalarni saqlashda xatolik yuz berdi." });
+  }
+});
+
+async function startServer() {
   // Run boostrap sync
   await syncDatabaseOnBoot().catch(e => console.error("Boot sync failed:", e));
-
-  // Set limits for base64 transfers
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-  // API Health Check
-  app.get('/api/health', (req, res) => {
-    res.json({ 
-      status: 'ok', 
-      time: new Date().toISOString(),
-      platform: 'express-vite-fullstack'
-    });
-  });
-
-  // Config Status Helper
-  app.get('/api/config', (req, res) => {
-    res.json({
-      hasGeminiKey: !!process.env.GEMINI_API_KEY,
-    });
-  });
-
-  // Window Corners Detection Proxy API using Gemini
-  app.post('/api/detect-windows', async (req, res) => {
-    try {
-      const { image } = req.body;
-      if (!image) {
-        return res.status(400).json({ error: 'Rasm ma\'lumotlari yuborilmadi (image base64 field is empty).' });
-      }
-
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
-        return res.status(500).json({ error: 'Serverda GEMINI_API_KEY sozlanmagan yoki u hali o\'zgartirilmagan. Iltimos, AI Studio sozlamalaridagi "Secrets" panelidan real API kalitni kiriting.' });
-      }
-
-      // Defensive check: strip custom surrounding quotes if any are present
-      const cleanApiKey = apiKey.trim().replace(/^["']|["']$/g, '');
-
-      const ai = new GoogleGenAI({ 
-        apiKey: cleanApiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build'
-          }
-        }
-      });
-      let base64Data = image;
-      if (image.includes(',')) {
-        base64Data = image.split(',')[1];
-      }
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: {
-          parts: [
-            { inlineData: { data: base64Data, mimeType: "image/jpeg" } },
-            { text: "Find the window areas in the image. If it's one large window, return it as a single window with 4 points. If there are clearly separate window sections, return each section separately. Return in JSON format: {\"windows\": [{\"points\": [{\"x\": 0-100, \"y\": 0-100}, ...], \"width\": meters, \"height\": meters}, ...]}." }
-          ]
-        }
-      });
-
-      const text = response.text || "";
-      const jsonStart = text.indexOf('{');
-      const jsonEnd = text.lastIndexOf('}') + 1;
-      
-      if (jsonStart === -1 || jsonEnd === 0) {
-        throw new Error("Sun'iy intellekt javobidan JSON topilmadi.");
-      }
-
-      const parsed = JSON.parse(text.substring(jsonStart, jsonEnd));
-      res.json(parsed);
-    } catch (error: any) {
-      console.error('API Window detection error:', error);
-      res.status(500).json({ error: error.message || 'Derazalarni sun\'iy intellekt orqali aniqlashda xatolik yuz berdi.' });
-    }
-  });
-
-  // REST API CRUD endpoints for full-stack data persistence (materials, orders, inventory, settings)
-  app.get('/api/db', (req, res) => {
-    try {
-      res.json(readLocalDb());
-    } catch (err: any) {
-      console.error("GET /api/db error:", err);
-      res.status(500).json({ error: err.message || "Ma'lumotlar bazasini yuklashda xatolik yuz berdi." });
-    }
-  });
-
-  app.get('/api/db/:collection', (req, res) => {
-    try {
-      const { collection } = req.params;
-      const db = readLocalDb();
-      if (!db[collection]) {
-        return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
-      }
-      res.json(db[collection]);
-    } catch (err: any) {
-      console.error(`GET /api/db/${req.params.collection} error:`, err);
-      res.status(500).json({ error: err.message || "Kolleksiyani o'qishda xatolik yuz berdi." });
-    }
-  });
-
-  app.post('/api/db/:collection', (req, res) => {
-    try {
-      const { collection } = req.params;
-      const item = req.body;
-      
-      const db = readLocalDb();
-      if (!db[collection]) {
-        db[collection] = [];
-      }
-      
-      if (!Array.isArray(db[collection])) {
-        return res.status(400).json({ error: `Kolleksiya massiv bo'lishi kerak, lekin u boshqa tipda: ${collection}` });
-      }
-      
-      // Generate a secure unique ID if missing
-      if (!item.id) {
-        item.id = Date.now().toString() + Math.random().toString(36).substring(2, 7);
-      }
-      if (!item.createdAt) {
-        item.createdAt = new Date().toISOString();
-      }
-      
-      db[collection].push(item);
-      writeLocalDb(db);
-      res.json({ success: true, item });
-    } catch (err: any) {
-      console.error(`POST /api/db/${req.params.collection} error:`, err);
-      res.status(500).json({ error: err.message || "Kolleksiyaga element qo'shishda xatolik yuz berdi." });
-    }
-  });
-
-  app.put('/api/db/:collection/:id', (req, res) => {
-    try {
-      const { collection, id } = req.params;
-      const updatedFields = req.body;
-      
-      const db = readLocalDb();
-      if (!db[collection]) {
-        return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
-      }
-      
-      if (!Array.isArray(db[collection])) {
-        return res.status(400).json({ error: `Kolleksiya massiv bo'lishi kerak, lekin u boshqa tipda: ${collection}` });
-      }
-      
-      const idx = db[collection].findIndex((item: any) => item.id === id);
-      if (idx === -1) {
-        return res.status(404).json({ error: `Kolleksiya elementi topilmadi, ID: ${id}` });
-      }
-      
-      db[collection][idx] = { 
-        ...db[collection][idx], 
-        ...updatedFields, 
-        updatedAt: new Date().toISOString() 
-      };
-      writeLocalDb(db);
-      res.json({ success: true, item: db[collection][idx] });
-    } catch (err: any) {
-      console.error(`PUT /api/db/${req.params.collection}/${req.params.id} error:`, err);
-      res.status(500).json({ error: err.message || "Elementni tahrirlashda xatolik yuz berdi." });
-    }
-  });
-
-  app.delete('/api/db/:collection/:id', (req, res) => {
-    try {
-      const { collection, id } = req.params;
-      
-      const db = readLocalDb();
-      if (!db[collection]) {
-        return res.status(404).json({ error: `Kolleksiya topilmadi: ${collection}` });
-      }
-      
-      if (!Array.isArray(db[collection])) {
-        return res.status(400).json({ error: `Kolleksiya massiv bo'lishi kerak, lekin u boshqa tipda: ${collection}` });
-      }
-      
-      const initialLen = db[collection].length;
-      db[collection] = db[collection].filter((item: any) => item.id !== id);
-      
-      if (db[collection].length === initialLen) {
-        return res.status(404).json({ error: `O'chirish uchun element topilmadi, ID: ${id}` });
-      }
-      
-      writeLocalDb(db);
-      res.json({ success: true });
-    } catch (err: any) {
-      console.error(`DELETE /api/db/${req.params.collection}/${req.params.id} error:`, err);
-      res.status(500).json({ error: err.message || "Elementni o'chirishda xatolik yuz berdi." });
-    }
-  });
-
-  app.post('/api/db-settings', (req, res) => {
-    try {
-      const settings = req.body;
-      const db = readLocalDb();
-      db.settings = { ...db.settings, ...settings };
-      writeLocalDb(db);
-      res.json({ success: true, settings: db.settings });
-    } catch (err: any) {
-      console.error("POST /api/db-settings error:", err);
-      res.status(500).json({ error: err.message || "Sozlamalarni saqlashda xatolik yuz berdi." });
-    }
-  });
 
   // Server Frontend via Vite or Static Files
   if (process.env.NODE_ENV !== 'production') {
@@ -436,11 +436,18 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Backend Server] Server http://localhost:${PORT} portida ishga tushdi.`);
-  });
+  // Only start listening if NOT in a Vercel serverless environment
+  if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[Backend Server] Server http://localhost:${PORT} portida ishga tushdi.`);
+    });
+  } else {
+    console.log("[Backend Server] Vercel serverless environment detected. Skipping listen.");
+  }
 }
 
 startServer().catch((err) => {
   console.error("Backend serverni ishga tushirishda xatolik:", err);
 });
+
+export default app;
